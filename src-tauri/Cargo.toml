@@ -1,0 +1,91 @@
+[package]
+name = "strawberry-agent"
+version = "0.1.0"
+description = "Strawberry Agent - a fast, bloat-free coding harness"
+authors = ["Strawberry Agent"]
+edition = "2021"
+rust-version = "1.85"
+# The crate also ships a `smoke` binary, so `cargo run` needs to be told which
+# one the app is.
+default-run = "strawberry-agent"
+
+[lib]
+name = "strawberry_agent_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2.11", features = ["protocol-asset", "devtools"] }
+tauri-plugin-dialog = "2"
+tauri-plugin-opener = "2"
+tauri-plugin-os = "2"
+tauri-plugin-clipboard-manager = "2"
+tauri-plugin-process = "2"
+tauri-plugin-window-state = "2"
+
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "time", "io-util", "fs", "process", "signal"] }
+tokio-util = "0.7"
+futures-util = { version = "0.3", default-features = false, features = ["std"] }
+
+reqwest = { version = "0.13", default-features = false, features = ["json", "stream", "rustls", "rustls-native-certs", "gzip", "brotli", "http2", "charset"] }
+
+rusqlite = { version = "0.40", features = ["bundled", "chrono", "serde_json"] }
+keyring = "4"
+
+portable-pty = "0.9"
+russh = { version = "0.63", default-features = false, features = ["ring", "flate2", "rsa"] }
+russh-sftp = "2"
+
+ignore = "0.4"
+grep-searcher = "0.1"
+grep-regex = "0.1"
+grep-matcher = "0.1"
+globset = "0.4"
+similar = "3"
+regex-lite = "0.1"
+
+uuid = { version = "1", features = ["v4", "v7", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+thiserror = "2"
+anyhow = "1"
+base64 = "0.23"
+dirs = "6"
+parking_lot = "0.12"
+bytes = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[profile.release]
+codegen-units = 1
+lto = "fat"
+opt-level = "s"
+panic = "abort"
+strip = true
+incremental = false
+
+[profile.dev]
+incremental = true
+opt-level = 0
+
+# Dependencies stay optimized even in dev builds: SQLite, TLS and the SSH
+# crypto stack are unusable at opt-level 0.
+[profile.dev.package."*"]
+opt-level = 2
+
+[lints.clippy]
+# Deny the things that indicate a real defect; keep pedantic style noise off so
+# warnings stay meaningful.
+all = { level = "deny", priority = -1 }
+unwrap_used = "warn"
+await_holding_lock = "deny"
+todo = "deny"
+dbg_macro = "deny"
+
+[lints.rust]
+unused_must_use = "deny"
+unsafe_code = "forbid"

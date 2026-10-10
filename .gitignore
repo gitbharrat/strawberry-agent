@@ -1,0 +1,16 @@
+node_modules
+dist
+src-tauri/target
+src-tauri/gen
+.DS_Store
+*.log
+
+# Local runtime context and credentials
+.strawberry/
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+*.tmp

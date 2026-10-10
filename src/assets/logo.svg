@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Strawberry Agent">
+  <defs>
+    <linearGradient id="sa-light" x1="0" y1="0" x2="0.7" y2="1">
+      <stop offset="0" stop-color="#FF6A7F"/>
+      <stop offset="1" stop-color="#F5304F"/>
+    </linearGradient>
+    <linearGradient id="sa-mid" x1="0.2" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#E11A40"/>
+      <stop offset="1" stop-color="#B80F31"/>
+    </linearGradient>
+    <linearGradient id="sa-dark" x1="0" y1="0" x2="0.6" y2="1">
+      <stop offset="0" stop-color="#A80D2E"/>
+      <stop offset="1" stop-color="#6E0620"/>
+    </linearGradient>
+    <linearGradient id="sa-blade" x1="0" y1="0" x2="1" y2="0.8">
+      <stop offset="0" stop-color="#5BE38E"/>
+      <stop offset="0.55" stop-color="#1FA85C"/>
+      <stop offset="1" stop-color="#0A6236"/>
+    </linearGradient>
+    <clipPath id="sa-body"><polygon points="256.0,470.0 160.0,408.0 80.0,300.0 88.0,192.0 148.0,152.0 212.0,172.0 256.0,214.0 300.0,172.0 364.0,152.0 424.0,192.0 432.0,300.0 352.0,408.0"/></clipPath>
+  </defs>
+
+  <g fill="url(#sa-blade)">
+      <polygon points="0.0,-26.0 70.4,-10.9 128.0,0.0 70.4,10.9 0.0,26.0" transform="translate(256 162) rotate(196)"/>
+      <polygon points="0.0,-23.0 57.2,-9.7 104.0,0.0 57.2,9.7 0.0,23.0" transform="translate(256 162) rotate(232)"/>
+      <polygon points="0.0,-21.0 52.8,-8.8 96.0,0.0 52.8,8.8 0.0,21.0" transform="translate(256 162) rotate(268)"/>
+      <polygon points="0.0,-23.0 57.2,-9.7 104.0,0.0 57.2,9.7 0.0,23.0" transform="translate(256 162) rotate(308)"/>
+      <polygon points="0.0,-26.0 70.4,-10.9 128.0,0.0 70.4,10.9 0.0,26.0" transform="translate(256 162) rotate(344)"/>
+    <polygon points="245.0,160.0 267.0,160.0 263.0,92.0 249.0,92.0"/>
+  </g>
+
+  <polygon points="256.0,470.0 160.0,408.0 80.0,300.0 88.0,192.0 148.0,152.0 212.0,172.0 256.0,214.0 300.0,172.0 364.0,152.0 424.0,192.0 432.0,300.0 352.0,408.0" fill="url(#sa-mid)"/>
+  <g clip-path="url(#sa-body)">
+    <polygon points="212.0,172.0 256.0,214.0 262.0,330.0 196.0,300.0 88.0,192.0 148.0,152.0" fill="url(#sa-light)"/>
+    <polygon points="256.0,214.0 300.0,172.0 364.0,152.0 424.0,192.0 432.0,300.0 296.0,356.0 262.0,330.0" fill="url(#sa-mid)"/>
+    <polygon points="262.0,330.0 296.0,356.0 432.0,300.0 352.0,408.0 256.0,470.0 160.0,408.0 196.0,300.0" fill="url(#sa-dark)"/>
+    <g fill="#FFD98A" opacity="0.95">
+      <polygon points="124.0,222.8 128.5,230.0 124.0,237.2 119.5,230.0" transform="rotate(-12.0 124.0 230.0)"/>
+      <polygon points="172.0,222.3 176.8,230.0 172.0,237.7 167.2,230.0" transform="rotate(-7.6 172.0 230.0)"/>
+      <polygon points="220.0,221.8 225.1,230.0 220.0,238.2 214.9,230.0" transform="rotate(-3.3 220.0 230.0)"/>
+      <polygon points="268.0,221.6 273.2,230.0 268.0,238.4 262.8,230.0" transform="rotate(1.1 268.0 230.0)"/>
+      <polygon points="316.0,222.1 320.9,230.0 316.0,237.9 311.1,230.0" transform="rotate(5.5 316.0 230.0)"/>
+      <polygon points="364.0,222.5 368.6,230.0 364.0,237.5 359.4,230.0" transform="rotate(9.8 364.0 230.0)"/>
+      <polygon points="148.0,266.5 152.6,274.0 148.0,281.5 143.4,274.0" transform="rotate(-9.8 148.0 274.0)"/>
+      <polygon points="196.0,266.1 200.9,274.0 196.0,281.9 191.1,274.0" transform="rotate(-5.5 196.0 274.0)"/>
+      <polygon points="244.0,265.6 249.2,274.0 244.0,282.4 238.8,274.0" transform="rotate(-1.1 244.0 274.0)"/>
+      <polygon points="292.0,265.8 297.1,274.0 292.0,282.2 286.9,274.0" transform="rotate(3.3 292.0 274.0)"/>
+      <polygon points="340.0,266.3 344.8,274.0 340.0,281.7 335.2,274.0" transform="rotate(7.6 340.0 274.0)"/>
+      <polygon points="125.6,311.0 130.0,318.0 125.6,325.0 121.3,318.0" transform="rotate(-11.9 125.6 318.0)"/>
+      <polygon points="173.6,310.6 178.2,318.0 173.6,325.4 169.0,318.0" transform="rotate(-7.5 173.6 318.0)"/>
+      <polygon points="221.6,310.1 226.5,318.0 221.6,325.9 216.7,318.0" transform="rotate(-3.1 221.6 318.0)"/>
+      <polygon points="269.6,309.9 274.7,318.0 269.6,326.1 264.6,318.0" transform="rotate(1.2 269.6 318.0)"/>
+      <polygon points="317.6,310.4 322.4,318.0 317.6,325.6 312.9,318.0" transform="rotate(5.6 317.6 318.0)"/>
+      <polygon points="365.6,310.8 370.1,318.0 365.6,325.2 361.2,318.0" transform="rotate(10.0 365.6 318.0)"/>
+      <polygon points="167.3,355.3 171.5,362.0 167.3,368.7 163.2,362.0" transform="rotate(-8.1 167.3 362.0)"/>
+      <polygon points="215.3,354.8 219.8,362.0 215.3,369.2 210.9,362.0" transform="rotate(-3.7 215.3 362.0)"/>
+      <polygon points="263.3,354.5 268.0,362.0 263.3,369.5 258.7,362.0" transform="rotate(0.7 263.3 362.0)"/>
+      <polygon points="311.3,355.0 315.7,362.0 311.3,369.0 307.0,362.0" transform="rotate(5.0 311.3 362.0)"/>
+      <polygon points="359.3,355.4 363.4,362.0 359.3,368.6 355.3,362.0" transform="rotate(9.4 359.3 362.0)"/>
+      <polygon points="180.5,399.8 184.3,406.0 180.5,412.2 176.7,406.0" transform="rotate(-6.9 180.5 406.0)"/>
+      <polygon points="228.5,399.4 232.6,406.0 228.5,412.6 224.4,406.0" transform="rotate(-2.5 228.5 406.0)"/>
+      <polygon points="276.5,399.3 280.7,406.0 276.5,412.7 272.4,406.0" transform="rotate(1.9 276.5 406.0)"/>
+      <polygon points="324.5,399.8 328.4,406.0 324.5,412.2 320.6,406.0" transform="rotate(6.2 324.5 406.0)"/>
+    </g>
+    <polygon points="256.0,470.0 160.0,408.0 80.0,300.0 88.0,192.0 148.0,152.0 212.0,172.0 256.0,214.0 300.0,172.0 364.0,152.0 424.0,192.0 432.0,300.0 352.0,408.0" fill="none" stroke="#3D0413" stroke-width="6" stroke-linejoin="miter"/>
+  </g>
+</svg>

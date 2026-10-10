@@ -1,0 +1,353 @@
+/* ---------------------------------------------------------------------------
+   Architecture pane: node map canvas + detail panel.
+
+   Same flat language as the rest of the app — the canvas is the one place
+   colour is allowed to do real work: group hue for territory, ring for
+   quality, violet for similarity, accent for the selection's edges.
+--------------------------------------------------------------------------- */
+
+.arch { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+
+.arch-filter {
+  width: 120px;
+  min-height: var(--ctl-h-sm);
+  height: var(--ctl-h-sm);
+  font-size: var(--fs-xs);
+  padding: 0 var(--s2);
+}
+
+/* ------------------------------------------------------------- progress */
+
+.arch-progress {
+  position: relative;
+  flex: none;
+  height: 18px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  overflow: hidden;
+}
+.arch-progress-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--accent-soft);
+  border-right: 1px solid var(--accent-line);
+  transition: width var(--t-med);
+}
+.arch-progress-fill[data-indeterminate="true"] { animation: arch-sweep 1.2s ease-in-out infinite; }
+@keyframes arch-sweep {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(350%); }
+}
+.arch-progress-msg {
+  position: relative;
+  display: block;
+  padding: 0 var(--s3);
+  line-height: 18px;
+  font-size: var(--fs-xs);
+  font-family: var(--font-mono);
+  color: var(--text-2);
+}
+
+/* --------------------------------------------------------------- canvas */
+
+.arch-body { flex: 1; min-height: 0; display: flex; container-type: inline-size; }
+.arch-canvas-wrap { flex: 1; min-width: 0; position: relative; background: var(--bg-sunken); overflow: hidden; }
+.arch-canvas { position: absolute; inset: 0; display: block; touch-action: none; }
+
+.arch-tip {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  max-width: 320px;
+  padding: 5px var(--s2) 6px;
+  background: var(--overlay);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-md);
+  pointer-events: none;
+  z-index: 5;
+}
+.arch-tip-name { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--text); }
+.arch-tip-role { font-size: var(--fs-xs); color: var(--text-2); margin-top: 1px; }
+.arch-tip-meta { font-family: var(--font-mono); font-size: 9.5px; color: var(--text-3); margin-top: 2px; }
+
+.arch-legend {
+  flex: none;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s3);
+  padding: 3px var(--s3);
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+}
+.arch-legend-sim { color: var(--violet-400); }
+.arch-legend-out { color: var(--accent); }
+.arch-legend-in { color: var(--steel-400); }
+
+/* Cluster color legend, top-left of the canvas. Click a row to focus it. */
+.arch-groups {
+  position: absolute;
+  left: var(--s2);
+  top: var(--s2);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  max-width: 190px;
+  padding: var(--s1);
+  background: color-mix(in srgb, var(--bg-sunken) 78%, transparent);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+}
+.arch-group-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 17px;
+  padding: 0 4px;
+  border-radius: var(--r-sm);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  color: var(--text-2);
+  text-align: left;
+}
+.arch-group-row:hover { background: var(--surface-2); color: var(--text); }
+.arch-group-row[data-on="true"] { background: var(--select-soft); color: var(--text); }
+.arch-group-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.arch-groups-sep { height: 1px; background: var(--border); margin: 3px 2px; }
+.arch-kind-glyph { margin-left: auto; text-align: center; color: var(--text-3); flex: none; }
+.arch-kind-swatch { width: 22px; height: 12px; flex: none; color: var(--text-2); }
+.arch-zoom-hint { font-size: 9px; letter-spacing: 0.06em; }
+
+.arch-capnote {
+  position: absolute;
+  left: var(--s2);
+  bottom: var(--s2);
+  padding: 2px var(--s2);
+  background: var(--overlay);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  color: var(--text-3);
+  pointer-events: none;
+}
+
+/* ---------------------------------------------------------------- panel */
+
+.arch-panel {
+  width: 300px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-left: 1px solid var(--border);
+  background: var(--bg);
+}
+/* On a narrow pane the graph wins; maximize (⌘⇧M) gives room for both. */
+@container (max-width: 560px) { .arch-panel { width: 230px; } }
+
+.arch-panel-head {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  flex: none;
+  height: var(--toolbar-h);
+  padding: 0 var(--s1) 0 var(--s2);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+.arch-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--text);
+  text-align: left;
+}
+.arch-panel-title:hover { color: var(--accent); }
+
+.arch-panel-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: var(--s2) var(--s2) var(--s5); }
+
+.arch-role { margin: 2px var(--s1) var(--s2); font-size: var(--fs-md); color: var(--text); line-height: 1.45; }
+.arch-meta { padding: 0 var(--s1) var(--s2); font-size: var(--fs-xs); font-family: var(--font-mono); }
+.arch-lints { display: flex; flex-wrap: wrap; gap: 3px; padding: 0 var(--s1) var(--s2); }
+.arch-hint { padding: var(--s3) var(--s1); font-size: var(--fs-xs); line-height: 1.5; }
+.arch-none { padding: var(--s2) var(--s1); font-size: var(--fs-xs); }
+
+.arch-fn-head {
+  padding: var(--s3) var(--s1) 3px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.arch-fn-headrow { display: flex; align-items: center; gap: var(--s2); }
+.arch-sort {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  color: var(--text-3);
+  padding: 1px 5px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  text-transform: none;
+}
+.arch-sort:hover { color: var(--text); border-color: var(--border-strong); }
+.arch-sort[data-on="true"] { color: var(--warn); border-color: var(--warn); }
+
+/* Per-function complexity chip: the optimisation queue at a glance. */
+.arch-cx {
+  margin-left: auto;
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  padding: 0 4px;
+  border-radius: var(--r-md);
+  color: var(--text-3);
+}
+.arch-cx[data-heat="warm"] { color: var(--warn); background: var(--warn-soft); }
+.arch-cx[data-heat="hot"] { color: var(--danger); background: var(--danger-soft); }
+/* The big-O chip sits beside cx; only the cx chip pushes to the right edge. */
+.arch-bigo { margin-left: auto; }
+.arch-bigo + .arch-cx { margin-left: 0; }
+
+.arch-listrow {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  width: 100%;
+  min-height: 22px;
+  padding: 2px var(--s1);
+  border-radius: var(--r-sm);
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+  text-align: left;
+}
+.arch-listrow:hover { background: var(--surface-2); color: var(--text); }
+.arch-listrow > :first-child { flex: 1; min-width: 0; }
+.arch-listrow[data-sim="true"]:hover { color: var(--violet-400); }
+.arch-sim-score { font-size: 9.5px; color: var(--violet-400); }
+
+/* ------------------------------------------------------------ functions */
+
+.arch-fn { margin-bottom: 1px; border-radius: var(--r-sm); border-left: 2px solid transparent; }
+.arch-fn[data-selected="true"] {
+  background: var(--select-soft);
+  border-left-color: var(--select);
+}
+.arch-fn-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 21px;
+  padding: 1px var(--s1);
+  text-align: left;
+  color: var(--text-2);
+}
+.arch-fn-row:hover { background: var(--surface-2); color: var(--text); }
+.arch-fn[data-selected="true"] .arch-fn-row { color: var(--text); }
+.arch-fn-dot { width: 6px; height: 6px; border-radius: 50%; flex: none; }
+.arch-fn-name { font-family: var(--font-mono); font-size: var(--fs-sm); min-width: 0; }
+.arch-fn-desc {
+  padding: 0 var(--s1) 3px calc(var(--s1) + 12px);
+  font-size: var(--fs-xs);
+  line-height: 1.4;
+}
+
+.arch-fn .chip[data-kind="math"] { color: var(--violet-400); border-color: transparent; background: color-mix(in srgb, var(--violet-400) 14%, transparent); }
+.arch-fn .chip[data-kind="routing"] { color: var(--steel-400); border-color: transparent; background: var(--select-soft); }
+.arch-fn .chip[data-kind="ui"],
+.arch-fn .chip[data-kind="state"],
+.arch-fn .chip[data-kind="io"],
+.arch-fn .chip[data-kind="util"] { border-color: var(--border); color: var(--text-3); }
+
+.arch-fn-detail {
+  padding: var(--s2) var(--s2) var(--s2) calc(var(--s1) + 12px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+.arch-fn-sig {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--text);
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 3px var(--s2);
+  overflow-wrap: anywhere;
+}
+.arch-io {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px var(--s2);
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+}
+.arch-io-k {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  padding-top: 1px;
+}
+.arch-note {
+  padding: 4px var(--s2);
+  border-radius: var(--r-md);
+  font-size: var(--fs-xs);
+  line-height: 1.45;
+}
+.arch-note[data-kind="math"] {
+  background: color-mix(in srgb, var(--violet-400) 12%, transparent);
+  color: var(--violet-400);
+}
+.arch-note[data-kind="routing"] { background: var(--select-soft); color: var(--steel-400); }
+.arch-fn-actions { display: flex; align-items: center; gap: var(--s2); }
+
+.arch-log { font-size: var(--fs-xs); }
+.arch-log summary {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px var(--s1);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  cursor: default;
+  list-style: none;
+}
+.arch-log summary::-webkit-details-marker { display: none; }
+.arch-log summary:hover { color: var(--text-2); }
+.arch-log-row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s2);
+  padding: 1px var(--s1) 1px var(--s3);
+  color: var(--text-2);
+}
+
+/* ------------------------------------------------- maximized side pane */
+
+/* The chat column stays mounted (its composer draft and scroll survive) but
+   collapses to zero; the pane takes the whole workspace. */
+.workspace[data-max="true"] { grid-template-columns: 0 0 1fr; }
+.workspace[data-max="true"] > .chat,
+.workspace[data-max="true"] > .splitter { visibility: hidden; overflow: hidden; }
+
+/* Legend type keys double as highlight toggles. */
+.arch-legend-key { color: inherit; font: inherit; display: inline-flex; align-items: center; gap: 2px; opacity: 0.85; }
+.arch-legend-key:hover { opacity: 1; }
+.arch-legend-key[data-on="true"] { opacity: 1; text-decoration: underline; text-underline-offset: 3px; }

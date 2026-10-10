@@ -1,0 +1,45 @@
+{
+  "name": "strawberry-agent",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Strawberry Agent \u2014 a fast, bloat-free coding harness powered by OpenRouter",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "tsc --noEmit && npm run lint",
+    "tauri": "tauri",
+    "app": "tauri dev",
+    "app:build": "tauri build",
+    "lint": "biome check src tools *.ts && npm run lint:rust",
+    "lint:fix": "biome check --write src tools *.ts",
+    "lint:rust": "cd src-tauri && cargo clippy --all-targets -- -D warnings",
+    "fmt": "biome format --write src tools *.ts && cd src-tauri && cargo fmt"
+  },
+  "dependencies": {
+    "@tanstack/solid-virtual": "^3.13.37",
+    "@tauri-apps/api": "^2.11.1",
+    "@tauri-apps/plugin-clipboard-manager": "^2.3.3",
+    "@tauri-apps/plugin-dialog": "^2.7.3",
+    "@tauri-apps/plugin-opener": "^2.5.5",
+    "@tauri-apps/plugin-os": "^2.3.2",
+    "@tauri-apps/plugin-process": "^2.3.1",
+    "@xterm/addon-fit": "^0.11.0",
+    "@xterm/addon-webgl": "^0.19.0",
+    "@xterm/xterm": "^6.0.0",
+    "katex": "^0.18.4",
+    "mermaid": "^11.17.2",
+    "solid-js": "^1.9.15"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.11",
+    "@resvg/resvg-js": "^2.6.2",
+    "@tauri-apps/cli": "^2.11.4",
+    "@types/katex": "^0.16.8",
+    "@types/node": "^26.4.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.2",
+    "vite-plugin-solid": "^2.11.14"
+  }
+}

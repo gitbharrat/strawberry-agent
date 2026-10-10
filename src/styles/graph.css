@@ -1,0 +1,673 @@
+/* ---------------------------------------------------------------------------
+   Model Execution Graph pane.
+
+   The Fusion look on the app's own tokens: thin flat tiles color-striped by
+   category, straight-faced chrome, wires in one SVG overlay. The running
+   node fills its bottom bar the way a Fusion tile fills green while it
+   renders; failure reads red; a bypassed node dims.
+--------------------------------------------------------------------------- */
+
+.meg { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+
+.meg-pick { max-width: 160px; }
+
+.meg-run-input {
+  width: clamp(140px, 22vw, 300px);
+  min-height: var(--ctl-h);
+  height: var(--ctl-h);
+  font-size: var(--fs-sm);
+  padding: 0 var(--s2);
+}
+
+.meg-body { flex: 1; min-height: 0; display: flex; }
+
+/* ------------------------------------------------------------------ canvas */
+
+.meg-canvas {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  overflow: hidden;
+  background-color: var(--bg-sunken);
+  /* The Fusion grid: dots that pan and zoom with the world. */
+  background-image: radial-gradient(circle, var(--border) 1px, transparent 1px);
+  touch-action: none;
+  outline: none;
+  cursor: default;
+}
+
+.meg-world {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+.meg-wires {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.meg-wire-hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 14;
+  pointer-events: stroke;
+  cursor: pointer;
+}
+
+.meg-wire-line {
+  fill: none;
+  stroke-width: 1.6;
+  opacity: 0.75;
+  pointer-events: none;
+}
+.meg-wire[data-loop="true"] .meg-wire-line { stroke-dasharray: 6 4; }
+.meg-wire[data-selected="true"] .meg-wire-line { stroke-width: 2.4; opacity: 1; }
+.meg-wire[data-active="true"] .meg-wire-line {
+  opacity: 1;
+  stroke-width: 2.2;
+  stroke-dasharray: 5;
+  animation: meg-dash 0.5s linear infinite;
+}
+@keyframes meg-dash { from { stroke-dashoffset: 10; } }
+
+.meg-wire-ghost {
+  fill: none;
+  stroke: var(--select);
+  stroke-width: 1.6;
+  stroke-dasharray: 5 4;
+  pointer-events: none;
+}
+
+.meg-loop-badge {
+  fill: var(--berry-400);
+  font: 600 9px var(--font-mono);
+  paint-order: stroke;
+  stroke: var(--bg-sunken);
+  stroke-width: 3px;
+}
+
+.meg-marquee {
+  position: absolute;
+  border: 1px solid var(--select);
+  background: var(--select-soft);
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* ------------------------------------------------------------------- tiles */
+
+.meg-node {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 150px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px 0 9px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+  border-left: 3px solid var(--cat, var(--text-3));
+  border-radius: var(--r-md);
+  user-select: none;
+  cursor: grab;
+}
+.meg-node:active { cursor: grabbing; }
+.meg-node:hover { background: var(--surface-3); }
+.meg-node[data-selected="true"] { outline: 1.5px solid var(--select); outline-offset: 2px; }
+.meg-node[data-disabled="true"] { opacity: 0.42; }
+.meg-node[data-status="skipped"] { opacity: 0.42; }
+.meg-node[data-status="failed"] { border-color: var(--danger); background: var(--danger-soft); }
+.meg-node[data-status="running"] { border-color: var(--cat, var(--border-strong)); }
+.meg-node[data-status="waiting"] { border-color: var(--warn); }
+.meg-node[data-note="true"] {
+  background: var(--warn-soft);
+  border-left-color: var(--warn);
+  border-style: dashed;
+}
+
+.meg-glyph { font-size: 12px; line-height: 1; flex: none; }
+
+.meg-node-text { display: flex; flex-direction: column; min-width: 0; flex: 1; gap: 1px; }
+.meg-node-name { font: 600 var(--fs-sm) var(--font-mono); color: var(--text); line-height: 1.1; }
+.meg-node-sub { font-size: 9px; font-family: var(--font-mono); color: var(--text-3); line-height: 1.1; }
+.meg-node[data-status="running"] .meg-node-sub { color: var(--text-2); }
+
+.meg-pin { display: flex; color: var(--warn); flex: none; }
+
+.meg-cost {
+  position: absolute;
+  right: 2px;
+  top: -13px;
+  font-size: 8.5px;
+  font-family: var(--font-mono);
+  color: var(--text-3);
+  white-space: nowrap;
+}
+
+/* The Fusion render indicator: the tile's bottom edge fills while it works. */
+.meg-node-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background: transparent;
+  overflow: hidden;
+}
+.meg-node-bar[data-status="running"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--cat, var(--accent));
+  transform-origin: left;
+  animation: meg-fill 1.6s ease-in-out infinite;
+}
+@keyframes meg-fill {
+  0% { transform: scaleX(0); opacity: 1; }
+  70% { transform: scaleX(1); opacity: 1; }
+  100% { transform: scaleX(1); opacity: 0.2; }
+}
+.meg-node-bar[data-status="done"] { background: var(--ok); opacity: 0.75; }
+.meg-node-bar[data-status="cached"] { background: var(--steel-400); opacity: 0.75; }
+.meg-node-bar[data-status="failed"] { background: var(--danger); }
+.meg-node-bar[data-status="waiting"] { background: var(--warn); animation: meg-pulse 1.1s ease-in-out infinite; }
+@keyframes meg-pulse { 50% { opacity: 0.3; } }
+
+/* Ports: Fusion's triangle in, square out. */
+.meg-port-in {
+  position: absolute;
+  left: -7px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 7px;
+  height: 9px;
+  background: var(--text-3);
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+  pointer-events: none;
+}
+.meg-node:hover .meg-port-in, .meg-node[data-selected="true"] .meg-port-in { background: var(--text-2); }
+
+.meg-port-out {
+  position: absolute;
+  right: -6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 9px;
+  height: 9px;
+  background: var(--text-3);
+  border: 1px solid var(--bg-sunken);
+  cursor: crosshair;
+}
+.meg-port-out:hover { background: var(--select); transform: translateY(-50%) scale(1.35); }
+.meg-port-out[data-two="true"][data-index="0"] { top: 30%; background: var(--ok); }
+.meg-port-out[data-two="true"][data-index="1"] { top: 72%; background: var(--danger); }
+.meg-port-out[data-two="true"]:hover { transform: translateY(-50%) scale(1.35); }
+
+/* ----------------------------------------------------------------- palette */
+
+.meg-palette {
+  position: absolute;
+  z-index: 6;
+  width: 290px;
+  background: var(--overlay);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+.meg-palette-input {
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  padding: 6px var(--s2);
+  font: 500 var(--fs-sm) var(--font-mono);
+  outline: none;
+}
+.meg-palette-list { max-height: 300px; overflow: auto; }
+.meg-palette-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  padding: 5px var(--s2);
+  background: none;
+  border: none;
+  color: var(--text-2);
+  text-align: left;
+  cursor: pointer;
+  font-size: var(--fs-sm);
+}
+.meg-palette-row[data-active="true"] { background: var(--surface-3); color: var(--text); }
+.meg-palette-row i { width: 7px; height: 7px; flex: none; border-radius: 1px; }
+.meg-palette-name { font-family: var(--font-mono); font-weight: 600; white-space: nowrap; }
+.meg-palette-blurb { color: var(--text-3); font-size: var(--fs-xs); }
+
+.meg-menu {
+  position: absolute;
+  z-index: 6;
+  min-width: 140px;
+  background: var(--overlay);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-md);
+  padding: 3px;
+  display: flex;
+  flex-direction: column;
+}
+.meg-menu button {
+  text-align: left;
+  background: none;
+  border: none;
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+  padding: 5px var(--s2);
+  cursor: pointer;
+  border-radius: var(--r-sm);
+}
+.meg-menu button:hover { background: var(--surface-3); color: var(--text); }
+.meg-menu button[data-tone="danger"]:hover { background: var(--danger-soft); color: var(--danger); }
+
+/* --------------------------------------------------------------- inspector */
+
+.meg-side {
+  flex: none;
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-left: 1px solid var(--border);
+  background: var(--bg);
+}
+.meg-side-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: var(--s2) var(--s2) var(--s2) var(--s3);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+.meg-side-name {
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  color: var(--text);
+  font: 600 var(--fs-md) var(--font-mono);
+  outline: none;
+  padding: 2px 4px;
+}
+.meg-side-name:focus { background: var(--surface); box-shadow: inset 0 0 0 1px var(--select); }
+.meg-side-name-static { padding: 2px 4px; }
+.meg-side-scroll { flex: 1; overflow: auto; padding: var(--s3); display: flex; flex-direction: column; gap: var(--s3); }
+.meg-side-blurb { color: var(--text-2); font-size: var(--fs-sm); margin: 0; }
+
+/* The composer's 600px model menu cannot fit a 300px inspector: anchor it to
+   the trigger's LEFT edge (right-anchoring walks it out of the sidebar), pin
+   it to the sidebar's width, and drop the badge column — name and id are the
+   essentials here; the composer keeps the full-width experience. */
+.meg-side .model-menu { left: 0; right: auto; width: 270px; max-height: 340px; }
+.meg-side .model-badges { display: none; }
+.meg-side .model-trigger { max-width: 200px; }
+
+.meg-field { display: flex; flex-direction: column; gap: 4px; }
+.meg-field-row { display: flex; align-items: center; gap: var(--s2); }
+.meg-field-label { font-size: var(--fs-xs); color: var(--text-3); font-family: var(--font-mono); }
+.meg-field-label em { font-style: normal; color: var(--leaf-400); }
+
+.meg-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--fs-sm);
+  color: var(--text-2);
+  cursor: pointer;
+}
+.meg-toggle input { accent-color: var(--accent); }
+
+.meg-prompt {
+  width: 100%;
+  resize: vertical;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  color: var(--text);
+  font: 400 var(--fs-sm) var(--font-mono);
+  line-height: 1.45;
+  padding: var(--s2);
+  outline: none;
+}
+.meg-prompt:focus { border-color: var(--select); }
+
+.meg-verdict {
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--danger);
+  background: var(--danger-soft);
+  border-radius: var(--r-md);
+  padding: var(--s2);
+  font-size: var(--fs-sm);
+  color: var(--text);
+}
+.meg-verdict[data-pass="true"] { border-left-color: var(--ok); background: var(--ok-soft); }
+.meg-verdict-issue { color: var(--text-2); margin-top: 3px; }
+
+.meg-theme { display: flex; flex-direction: column; gap: 4px; }
+.meg-swatches { display: flex; gap: 4px; flex-wrap: wrap; }
+.meg-swatch {
+  width: 26px;
+  height: 26px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--border-strong);
+}
+
+.meg-output {
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--bg);
+  padding: var(--s2) var(--s3);
+  max-height: 300px;
+  overflow: auto;
+  font-size: var(--fs-sm);
+}
+.meg-out-meta { font-size: var(--fs-xs); color: var(--text-3); }
+
+.meg-legend-cat {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.meg-legend-cat i { width: 7px; height: 7px; border-radius: 1px; display: inline-block; }
+
+.meg-chip-name { max-width: 96px; }
+
+/* ------------------------------------------------------------------ groups */
+
+/* A collapsed group: one tile standing in for its stages — the custom node. */
+.meg-group {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 150px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px 0 9px;
+  background: var(--surface-3);
+  border: 1px solid var(--border-strong);
+  border-left: 3px solid var(--text-2);
+  border-radius: var(--r-md);
+  box-shadow: 2.5px 2.5px 0 0 var(--surface-2), 2.5px 2.5px 0 1px var(--border-strong);
+  user-select: none;
+  cursor: grab;
+}
+.meg-group:active { cursor: grabbing; }
+.meg-group:hover { background: var(--surface-4); }
+.meg-group[data-status="failed"] { border-color: var(--danger); }
+.meg-group .meg-glyph { color: var(--text-2); }
+.meg-group .meg-port-in { top: 50%; }
+
+/* An expanded group: Fusion's underlay — a titled box behind its nodes. */
+.meg-underlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--r-md);
+  background: rgb(255 255 255 / 0.015);
+  pointer-events: none;
+}
+.meg-underlay-label {
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  padding: 1px 7px 2px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-md);
+  color: var(--text-2);
+  font: 600 var(--fs-xs) var(--font-mono);
+  cursor: pointer;
+  pointer-events: auto;
+}
+.meg-underlay-label:hover { color: var(--text); background: var(--surface-3); }
+
+.meg-name-prompt {
+  position: absolute;
+  z-index: 7;
+  width: 240px;
+  background: var(--overlay);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+
+.meg-palette-divider {
+  padding: 4px var(--s2) 2px;
+  font: 600 9px var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  border-top: 1px solid var(--border);
+}
+.meg-palette-main {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: inherit;
+  text-align: left;
+  padding: 0;
+  cursor: pointer;
+}
+.meg-palette-del {
+  flex: none;
+  padding: 0 4px;
+  background: none;
+  border: none;
+  font-size: inherit;
+  color: var(--text-3);
+  cursor: pointer;
+}
+.meg-palette-del:hover { color: var(--danger); }
+
+/* Design tile: the theme it committed to, worn on its face. */
+.meg-tile-swatches { display: flex; gap: 2px; flex: none; }
+.meg-tile-swatches i {
+  width: 6px;
+  height: 12px;
+  border-radius: 1px;
+  border: 1px solid rgb(0 0 0 / 0.35);
+}
+
+/* ---------------------------------------------------------- wireframe view */
+
+.meg-wireframe {
+  position: relative;
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+.meg-wf-area {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--steel-400);
+  background: color-mix(in srgb, var(--steel-400) 12%, transparent);
+  color: var(--text-2);
+  font: 500 9px var(--font-mono);
+  overflow: hidden;
+  padding: 1px 3px;
+}
+.meg-wf-area[data-role="nav"] { border-color: var(--steel-400); }
+.meg-wf-area[data-role="hero"] {
+  border-color: var(--violet-400);
+  background: color-mix(in srgb, var(--violet-400) 14%, transparent);
+}
+.meg-wf-area[data-role="media"] {
+  border-color: var(--leaf-400);
+  background: color-mix(in srgb, var(--leaf-400) 12%, transparent);
+}
+.meg-wf-area[data-role="sidebar"] {
+  border-color: var(--amber-400);
+  background: color-mix(in srgb, var(--amber-400) 12%, transparent);
+}
+.meg-wf-area[data-role="cta"] {
+  border-color: var(--berry-400);
+  background: color-mix(in srgb, var(--berry-400) 16%, transparent);
+}
+.meg-wf-area[data-role="footer"] { opacity: 0.7; }
+
+/* ----------------------------------------- the graph card in the transcript */
+
+.graph-card {
+  margin: var(--s2) 0;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  padding: var(--s2) var(--s3);
+}
+.graph-card[data-finished="true"] { border-left-color: var(--ok); }
+.graph-card-head { display: flex; align-items: center; gap: var(--s2); margin-bottom: 6px; }
+.graph-card-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--text);
+  font: 600 var(--fs-sm) var(--font-mono);
+  cursor: pointer;
+}
+.graph-card-name:hover { color: var(--accent); }
+.graph-card-stages {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 3px 5px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+}
+.graph-card-sep { color: var(--text-3); }
+.graph-card-stage {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 7px 2px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  color: var(--text-3);
+  white-space: nowrap;
+}
+.graph-card-stage i { font-style: normal; opacity: 0.8; }
+.graph-card-stage em { font-style: normal; font-weight: 700; }
+.graph-card-stage[data-status="running"] {
+  color: var(--text);
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+  animation: meg-pulse 1.4s ease-in-out infinite;
+}
+.graph-card-stage[data-status="waiting"] { color: var(--warn); border-color: var(--warn); }
+.graph-card-stage[data-status="done"] { color: var(--text-2); }
+.graph-card-stage em[data-status="done"] { color: var(--ok); }
+.graph-card-stage em[data-status="cached"] { color: var(--steel-400); }
+.graph-card-stage em[data-status="failed"] { color: var(--danger); }
+.graph-card-stage[data-status="failed"] { border-color: var(--danger); color: var(--danger); }
+.graph-card-stage[data-status="skipped"] { opacity: 0.45; }
+.graph-card-detail {
+  margin-top: 5px;
+  font: 400 var(--fs-xs) var(--font-mono);
+  color: var(--text-3);
+}
+
+/* Verify/test outcomes rendered as cards under the stage strip. */
+.graph-card-verdict {
+  margin-top: 6px;
+  padding: 6px 9px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--ok);
+  border-radius: var(--r-sm);
+  background: var(--bg);
+  font-size: var(--fs-sm);
+}
+.graph-card-verdict[data-pass="false"] { border-left-color: var(--danger); }
+.graph-card-verdict-head { display: flex; align-items: center; gap: var(--s2); min-width: 0; }
+.graph-card-verdict[data-pass="true"] .graph-card-verdict-head strong { color: var(--ok); }
+.graph-card-verdict[data-pass="false"] .graph-card-verdict-head strong { color: var(--danger); }
+.graph-card-verdict-summary { color: var(--text-2); min-width: 0; flex: 1; }
+.graph-card-issue { margin-top: 3px; color: var(--text-2); font-size: var(--fs-xs); }
+
+/* The auto-planner's review banner, floating over the canvas. */
+.meg-draft {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  top: 10px;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: 8px 12px;
+  border: 1px solid var(--accent);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.22);
+}
+.meg-draft-text { flex: 1; min-width: 0; font-size: var(--fs-sm); }
+.meg-draft-why { color: var(--text-2); }
+
+/* Live tail of the running node inside the chat's graph card: the last few
+   lines of whatever the stage is writing, bottom-anchored like a terminal. */
+.graph-card-tail {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  max-height: 76px;
+  overflow: hidden;
+  margin-top: var(--s1);
+  padding: var(--s1) var(--s2);
+  border-top: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  line-height: 1.5;
+  color: var(--text-2);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* ------------------------------------------------------- design editing */
+/* Swatches double as colour pickers; the native input hides inside. */
+.meg-swatch { position: relative; cursor: pointer; overflow: hidden; }
+.meg-swatch-input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.meg-swatch-input:disabled { cursor: default; }
+.meg-wireframe[data-editable="true"] .meg-wf-area { cursor: grab; touch-action: none; }
+.meg-wf-area[data-dragging="true"] { cursor: grabbing; outline: 1px dashed var(--select); z-index: 2; }
+.meg-wf-handle {
+  position: absolute; right: -1px; bottom: -1px; width: 10px; height: 10px;
+  cursor: nwse-resize; border-right: 2px solid var(--text-3); border-bottom: 2px solid var(--text-3);
+  opacity: 0; transition: opacity var(--t-fast);
+}
+.meg-wf-area:hover .meg-wf-handle { opacity: 0.9; }
+.meg-wf-rename {
+  width: 90%; border: 0; outline: 1px solid var(--select); border-radius: 2px;
+  background: var(--bg); color: var(--text); font: inherit; text-align: center; padding: 1px 2px;
+}
