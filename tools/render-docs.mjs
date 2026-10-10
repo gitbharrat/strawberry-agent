@@ -11,9 +11,9 @@ const box = (x, y, w, h, c = "#292832") =>
   `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="12" fill="#191820" stroke="${c}"/>`;
 function save(name, w, h, body) {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#a49ab8"/></marker></defs><rect width="100%" height="100%" fill="#100f16"/>${body}</svg>`;
-  writeFileSync(new URL(name + ".svg", out), svg);
+  writeFileSync(new URL(`${name}.svg`, out), svg);
   writeFileSync(
-    new URL(name + ".png", out),
+    new URL(`${name}.png`, out),
     new Resvg(svg, { font: { loadSystemFonts: true } }).render().asPng(),
   );
 }
